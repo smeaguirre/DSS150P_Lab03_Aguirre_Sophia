@@ -79,8 +79,7 @@ def _stage_products(raw_dir: Path, run_id: str, quarantine: list[dict]) -> pd.Da
         quarantine.extend(_quarantine_records(bad_ts, 'products', 'unparseable_updated_at', 'product_id', run_id))
         df = df[df['updated_at'].notna()]
 
-    # Handles duplicate product_id rows (e.g. P0300 appearing twice with
-    # different updated_at) by keeping only the most recent version.
+
     df = _dedupe_latest(df, 'product_id', 'updated_at')
 
     bad_price = df[df['unit_price'].isna() | (df['unit_price'] < 0)]
