@@ -2,13 +2,14 @@ import pandas as pd
 import psycopg
 
 from src.config import DB
+from datetime import datetime, timezone
 
+# Matches curated.sales_order_lines column order exactly.
 CURATED_COLUMNS = [
-    'order_id', 'customer_id', 'product_id', 'order_timestamp', 'quantity',
-    'unit_price', 'discount_pct', 'status',
-    'gross_amount', 'discount_amount', 'net_amount',
-    'customer_email', 'customer_city', 'customer_tier',
-    'product_name', 'product_category_name', 'product_category_department', 'product_brand',
+    'order_id', 'customer_id', 'product_id', 'order_timestamp',
+    'customer_city', 'customer_tier', 'product_name', 'category', 'brand',
+    'quantity', 'unit_price', 'discount_pct',
+    'gross_amount', 'discount_amount', 'net_amount', 'status',
     'source_updated_at', 'pipeline_run_id', 'processed_at_utc', 'record_hash',
 ]
 
@@ -58,3 +59,53 @@ def upsert_curated(df: pd.DataFrame, run_id: str) -> int:
 def load_partition(df, year: int, month: int, run_id: str) -> int:
     """Load only a selected year/month partition and record audit.partition_loads."""
     raise NotImplementedError('Implement Goal 3 selected-partition load')
+
+def start_pipeline_run(run_id: str) -> None:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO audit.pipeline_runs
+                    (pipeline_run_id, started_at_utc, status)
+                VALUES (%s, %s, 'RUNNING')
+                ON CONFLICT (pipeline_run_id) DO NOTHING
+                """,
+                (run_id, datetime.now(timezone.utc)),
+            )
+        conn.commit()
+
+
+def complete_pipeline_run(run_id: str, rows_staging: int, rows_curated: int,
+                           rows_quarantined: int) -> None:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE audit.pipeline_runs
+                SET completed_at_utc = %s,
+                    status = 'SUCCESS',
+                    rows_staging = %s,
+                    rows_curated = %s,
+                    rows_quarantined = %s
+                WHERE pipeline_run_id = %s
+                """,
+                (datetime.now(timezone.utc), rows_staging, rows_curated,
+                 rows_quarantined, run_id),
+            )
+        conn.commit()
+
+
+def fail_pipeline_run(run_id: str, message: str) -> None:
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE audit.pipeline_runs
+                SET completed_at_utc = %s,
+                    status = 'FAILED',
+                    message = %s
+                WHERE pipeline_run_id = %s
+                """,
+                (datetime.now(timezone.utc), message[:2000], run_id),
+            )
+        conn.commit()
