@@ -32,20 +32,14 @@ def _quarantine_orphans(rows: pd.DataFrame, reason: str, run_id: str) -> list[di
     return out
 
 
-def _prefix_columns(df: pd.DataFrame, key_col: str, prefix: str) -> pd.DataFrame:
-    """Prefix every column except the join key, avoiding double-prefixing
-    columns (like customer_tier) that already carry the prefix."""
-    rename_map = {
-        c: c if c == key_col or c.startswith(prefix) else f'{prefix}{c}'
-        for c in df.columns
-    }
-    return df.rename(columns=rename_map)
-
-
 def build_curated(staging: dict, run_id: str):
     orders = staging['orders'].copy()
-    customers = _prefix_columns(staging['customers'], 'customer_id', 'customer_')
-    products = _prefix_columns(staging['products'], 'product_id', 'product_')
+    customers = staging['customers'][['customer_id', 'city', 'customer_tier']].rename(
+        columns={'city': 'customer_city'}
+    )
+    products = staging['products'][['product_id', 'name', 'category_name', 'brand']].rename(
+        columns={'name': 'product_name', 'category_name': 'category'}
+    )
 
     quarantine_records: list[dict] = []
 
@@ -67,6 +61,11 @@ def build_curated(staging: dict, run_id: str):
 
     curated = valid_orders.merge(customers, on='customer_id', how='left') \
                            .merge(products, on='product_id', how='left')
+
+    # NOT NULL in the target table; default missing discount to 0.
+    # Assumption: spec doesn't define a default — flag this if data has gaps.
+    curated['discount_pct'] = curated['discount_pct'].fillna(0.0)
+    curated['quantity'] = curated['quantity'].astype(int)
 
     curated['gross_amount'] = curated['quantity'] * curated['unit_price']
     curated['discount_amount'] = curated['gross_amount'] * curated['discount_pct']
