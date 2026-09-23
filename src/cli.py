@@ -11,6 +11,8 @@ from src.transform.curated import build_curated
 from src.load.postgres import (
     upsert_curated, start_pipeline_run, complete_pipeline_run, fail_pipeline_run,
 )
+from src.benchmark.storage import run_benchmark, write_partitioned_parquet
+from src.load.postgres import load_partition
 
 
 class PipelineStageError(Exception):
@@ -72,7 +74,7 @@ def main():
     sub.add_parser('transform')
     sub.add_parser('load')
     sub.add_parser('validate')
-    b = sub.add_parser('benchmark'); b.add_argument('--repeats', type=int, default=5)
+    b = sub.add_parser('benchmark'); b.add_argument('--repeats', type=int, default=SETTINGS['storage_benchmark']['repeats'])
     p = sub.add_parser('load-partition'); p.add_argument('--year', type=int, required=True); p.add_argument('--month', type=int, required=True)
     sub.add_parser('run-all')
     args = parser.parse_args()
@@ -99,6 +101,22 @@ def main():
         _run_load(run_id)
         return
 
+    if args.command == 'benchmark':
+        curated_path = path_for('curated_dir') / 'sales_order_lines.parquet'
+        results = run_benchmark(curated_path, path_for('benchmark_dir'), repeats=args.repeats)
+        print(results.to_string(index=False))
+
+        curated_df = pd.read_parquet(curated_path)
+        write_partitioned_parquet(curated_df, path_for('partition_dir'))
+        print(f'partitioned dataset written to {path_for("partition_dir")}')
+        return
+
+    if args.command == 'load-partition':
+        run_id = new_run_id()
+        n = load_partition(path_for('partition_dir'), args.year, args.month, run_id)
+        print(f'partition_rows_loaded={n}')
+        return
+
     if args.command == 'run-all':
         run_id = new_run_id()
         start_pipeline_run(run_id)
@@ -116,6 +134,7 @@ def main():
         return
 
     raise NotImplementedError(f'Wire command: {args.command}')
+
 
 if __name__ == '__main__':
     main()
