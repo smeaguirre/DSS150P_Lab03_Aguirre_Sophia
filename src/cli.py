@@ -1,6 +1,7 @@
 import argparse
 import sys
 
+
 def main():
     # Initialize the parser
     parser = argparse.ArgumentParser(description="DSS150P Data Pipeline")
