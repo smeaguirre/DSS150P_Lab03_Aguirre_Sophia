@@ -1,6 +1,5 @@
 .venv
 src/__pycache__
 __pycache__
-analysis_questions.md
 .env
 .env.example
