@@ -1,0 +1,4 @@
+CONTAINER ID   IMAGE                                     COMMAND                  CREATED       STATUS                 PORTS                                         NAMES
+4976f0549547   dss150p-lab03-starter-airflow-scheduler   "/usr/bin/dumb-init …"   2 hours ago   Up 2 hours             8080/tcp                                      dss150p-airflow-scheduler
+b9c2af3061df   dss150p-lab03-starter-airflow-webserver   "/usr/bin/dumb-init …"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   dss150p-airflow-webserver
+0d1a20e09662   postgres:16                               "docker-entrypoint.s…"   2 hours ago   Up 2 hours (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp   dss150p-postgres

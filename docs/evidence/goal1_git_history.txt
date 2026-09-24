@@ -1,0 +1,15 @@
+865d2be acceptance tested
+75afab3 acceptance tested
+e1863d9 testing working pipeline
+e619991 working run-all and load
+7ee5581 updated cli.py
+8508934 updated postgres
+ba19586 test version
+54c3ce6 cli
+f16cdbf postgres
+9aaf0e3 curated
+3cc83b3 staging
+aa20fe5 extract
+f780782 working .venv
+fae7a0d feat: add reproducible pipeline environment
+3f0efc0 Update staging.py

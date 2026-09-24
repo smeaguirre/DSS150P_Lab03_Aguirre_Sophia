@@ -1,0 +1,9 @@
+# Database Configuration
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=your_password_here
+POSTGRES_DB=dss150p
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+
+# Airflow Configuration
+AIRFLOW_UID=50000
