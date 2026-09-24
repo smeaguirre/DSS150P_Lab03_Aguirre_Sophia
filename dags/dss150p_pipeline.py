@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.models.param import Param
-from airflow.operators.bash import BashOperator
+from airflow.sdk import Param
+from airflow.sdk import BashOperator
 
 PROJECT = '/opt/airflow/project'
 
